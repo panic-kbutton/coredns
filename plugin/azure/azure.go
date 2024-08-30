@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
-	"strings"
-
 
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/file"
@@ -17,28 +16,28 @@ import (
 
 	publicdns "github.com/Azure/azure-sdk-for-go/profiles/latest/dns/mgmt/dns"
 	privatedns "github.com/Azure/azure-sdk-for-go/profiles/latest/privatedns/mgmt/privatedns"
-	"github.com/miekg/dns"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/miekg/dns"
 )
 
 type zone struct {
-	id      string
-	z       *file.Zone
-	zone    string
-    subscription string
-    publicClient  publicdns.RecordSetsClient
-    privateClient privatedns.RecordSetsClient
-	private bool
+	id            string
+	z             *file.Zone
+	zone          string
+	subscription  string
+	publicClient  publicdns.RecordSetsClient
+	privateClient privatedns.RecordSetsClient
+	private       bool
 }
 
 type zones map[string][]*zone
 
 // Azure is the core struct of the azure plugin.
 type Azure struct {
-	zoneNames     []string
-	upstream      *upstream.Upstream
-	zMu           sync.RWMutex
-	zones         zones
+	zoneNames []string
+	upstream  *upstream.Upstream
+	zMu       sync.RWMutex
+	zones     zones
 
 	Next plugin.Handler
 	Fall fall.F
@@ -46,27 +45,26 @@ type Azure struct {
 
 // New validates the input DNS zones and initializes the Azure struct.
 func New(ctx context.Context, env auth.EnvironmentSettings, keys map[string][]string, accessMap map[string]string) (*Azure, error) {
-
 	zones := make(map[string][]*zone, len(keys))
 	names := make([]string, len(keys))
 	var private bool
 
 	for subResourceGroup, znames := range keys {
-        azureIds := strings.Split(subResourceGroup, "/")
-        subscription := azureIds[0]
-        resourceGroup := azureIds[1]
-        var err error
+		azureIds := strings.Split(subResourceGroup, "/")
+		subscription := azureIds[0]
+		resourceGroup := azureIds[1]
+		var err error
 
 		for _, name := range znames {
-            publicDNSClient := publicdns.NewRecordSetsClient(subscription)
-            if publicDNSClient.Authorizer, err = env.GetAuthorizer(); err != nil {
-                return nil, plugin.Error("azure", err)
-            }
+			publicDNSClient := publicdns.NewRecordSetsClient(subscription)
+			if publicDNSClient.Authorizer, err = env.GetAuthorizer(); err != nil {
+				return nil, plugin.Error("azure", err)
+			}
 
-            privateDNSClient := privatedns.NewRecordSetsClient(subscription)
-            if privateDNSClient.Authorizer, err = env.GetAuthorizer(); err != nil {
-                return nil, plugin.Error("azure", err)
-            }
+			privateDNSClient := privatedns.NewRecordSetsClient(subscription)
+			if privateDNSClient.Authorizer, err = env.GetAuthorizer(); err != nil {
+				return nil, plugin.Error("azure", err)
+			}
 
 			switch accessMap[resourceGroup+name] {
 			case "public":
@@ -85,14 +83,14 @@ func New(ctx context.Context, env auth.EnvironmentSettings, keys map[string][]st
 			if _, ok := zones[fqdn]; !ok {
 				names = append(names, fqdn)
 			}
-            zones[fqdn] = append(zones[fqdn], &zone{subscription: subscription, publicClient: publicDNSClient, privateClient: privateDNSClient, id: resourceGroup, zone: name, private: private, z: file.NewZone(fqdn, "")})
+			zones[fqdn] = append(zones[fqdn], &zone{subscription: subscription, publicClient: publicDNSClient, privateClient: privateDNSClient, id: resourceGroup, zone: name, private: private, z: file.NewZone(fqdn, "")})
 		}
 	}
 
 	return &Azure{
-		zones:         zones,
-		zoneNames:     names,
-		upstream:      upstream.New(),
+		zones:     zones,
+		zoneNames: names,
+		upstream:  upstream.New(),
 	}, nil
 }
 

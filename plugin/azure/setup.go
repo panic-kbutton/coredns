@@ -56,7 +56,7 @@ func parse(c *caddy.Controller) (auth.EnvironmentSettings, map[string][]string, 
 	var zoneName string
 
 	for c.Next() {
-        resourceGroupMapping := map[string][]string{}
+		resourceGroupMapping := map[string][]string{}
 		args := c.RemainingArgs()
 
 		for i := 0; i < len(args); i++ {
@@ -122,9 +122,9 @@ func parse(c *caddy.Controller) (auth.EnvironmentSettings, map[string][]string, 
 				return env, resourceGroupMapping, accessMap, fall, c.Errf("unknown property: %q", c.Val())
 			}
 		}
-        for k,v := range resourceGroupMapping {
-            subResourceGroupMapping[env.Values[auth.SubscriptionID]+"/"+k] = v
-        }
+		for k, v := range resourceGroupMapping {
+			subResourceGroupMapping[env.Values[auth.SubscriptionID]+"/"+k] = v
+		}
 	}
 
 	env.Values[auth.Resource] = azureEnv.ResourceManagerEndpoint
